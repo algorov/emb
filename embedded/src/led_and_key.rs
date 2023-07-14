@@ -38,8 +38,16 @@ impl <'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         let mut driver = Self { stb, dio, clk, display, brightness };
 
         driver.push_display_ctrl_instr();
+        driver.cleanup();
 
         driver
+    }
+
+    // Sets all display registers to zero.
+    pub(crate) fn cleanup(&mut self) {
+        for i in 0..15 {
+            self.write(i, NULL);
+        }
     }
 
     // Includes display.

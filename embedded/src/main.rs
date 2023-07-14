@@ -22,12 +22,7 @@ async fn main(_spawner: Spawner) -> ! {
 
     Timer::after(Duration::from_secs(5)).await;
 
-    driver.set_brightness(0x03);
-    driver.display_off();
 
-    Timer::after(Duration::from_secs(5)).await;
-
-    driver.display_on();
 
     loop {}
 }
