@@ -24,19 +24,19 @@ pub(crate) const BRIGHTNESS: u8 = 0x01;         // 0b00000111 (0) Можно и�
 */
 
 // For LED segments;
-const DIGIT_0: usize = 0x3F; // 0
-const DIGIT_1: usize = 0x06; // 1
-const DIGIT_2: usize = 0x5B; // 2
-pub(crate) const DIGIT_3: usize = 0x4F; // 3
-const DIGIT_4: usize = 0x66; // 4
-const DIGIT_5: usize = 0x6D; // 5
-const DIGIT_6: usize = 0x7D; // 6
-const DIGIT_7: usize = 0x07; // 7
-const DIGIT_8: usize = 0x7F; // 8
-const DIGIT_9: usize = 0x6F; // 9
-const DIGIT_A: usize = 0x77; // A
-const DIGIT_b: usize = 0x7c; // b
-const DIGIT_C: usize = 0x39; // C
-const DIGIT_d: usize = 0x5E; // d
-const DIGIT_E: usize = 0x79; // E
-const DIGIT_F: usize = 0x71; // F
+const DIGIT_0: u8 = 0x3F; // 0
+const DIGIT_1: u8 = 0x06; // 1
+pub(crate) const DIGIT_2: u8 = 0x5B; // 2
+pub(crate) const DIGIT_3: u8 = 0x4F; // 3
+const DIGIT_4: u8 = 0x66; // 4
+const DIGIT_5: u8 = 0x6D; // 5
+const DIGIT_6: u8 = 0x7D; // 6
+const DIGIT_7: u8 = 0x07; // 7
+const DIGIT_8: u8 = 0x7F; // 8
+const DIGIT_9: u8 = 0x6F; // 9
+const DIGIT_A: u8 = 0x77; // A
+const DIGIT_b: u8 = 0x7c; // b
+const DIGIT_C: u8 = 0x39; // C
+const DIGIT_d: u8 = 0x5E; // d
+const DIGIT_E: u8 = 0x79; // E
+const DIGIT_F: u8 = 0x71; // F

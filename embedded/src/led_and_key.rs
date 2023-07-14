@@ -1,9 +1,10 @@
+use core::f64::DIGITS;
 use defmt::export::usize;
 use defmt::println;
 use embassy_stm32::gpio::{Flex, Level, Output, Pin, Pull, Speed};
 use embassy_stm32::{into_ref, Peripheral};
 use embassy_time::{Duration, Timer};
-use instructions::{BRIGHTNESS, DIGIT_3, DISPLAY_CTRL_INSTR, DISPLAY_ON_INSTR, NULL};
+use instructions::{BRIGHTNESS, DIGIT_2, DIGIT_3, DISPLAY_CTRL_INSTR, DISPLAY_ON_INSTR, NULL};
 use crate::led_and_key::instructions::{ADDRESS_SET_INSTR, DATA_WRITE_INSTR};
 
 mod instructions;
@@ -34,43 +35,59 @@ impl <'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
         let mut driver = Self { stb, dio, clk, brightness };
 
-        driver.write_display_ctrl_instruction();
-        driver.push_cmd(0x40);
+        driver.push_display_ctrl_instr();
 
-        driver.write(0, 0x3F);
+        driver.set_led_value(1, 1);
+        driver.set_segment_value(7, DIGIT_2);
 
         driver
     }
 
+    /*
+     Sets the value of the segment.
+     @position: 0..7
+     @state: 0...9 and A-Z
+     */
+    pub(crate) fn set_segment_value(&mut self, position: u8, state: u8) -> () {
+        self.write(position << 1, state);
+    }
+
+    /*
+     Sets the value of the LED.
+     @position: 0..7
+     @state: 0 or 1
+     */
     pub(crate) fn set_led_value(&mut self, position: u8, state: u8) -> () {
         self.write((position << 1) + 1, state);
     }
 
+    // Write a byte to the display register.
     fn write(&mut self, position: u8, data: u8) -> () {
+        self.push_write_data_instr();
+
         self.stb.set_low();
 
-        for i in 0..10 {
-            self.set_address_instruction(position + i);
-            self.write_byte(data);
-        }
+        self.push_address_instr(position);
+        self.write_byte(data);
 
         self.stb.set_high();
     }
 
-
-    // display command: display on, set brightness.
-    fn write_display_ctrl_instruction(&mut self) -> () {
+    // Display command: display on, set brightness.
+    fn push_display_ctrl_instr(&mut self) -> () {
         self.push_cmd(DISPLAY_CTRL_INSTR | DISPLAY_ON_INSTR | self.brightness);
     }
 
-    // Sets the value in the memory address.
-    fn write_data_instruction(&mut self) -> () {
-        // data command: automatic address increment, normal mode.
+    /*
+     Sets the value in the memory address.
+     Data command: automatic address increment, normal mode.
+     */
+    fn push_write_data_instr(&mut self) -> () {
         self.push_cmd(DATA_WRITE_INSTR);
     }
 
     // Sets the address to write the value to.
-    fn set_address_instruction(&mut self, address: u8) -> () {
+    fn push_address_instr(&mut self, address: u8) -> () {
         self.write_byte(ADDRESS_SET_INSTR | address);
     }
 
