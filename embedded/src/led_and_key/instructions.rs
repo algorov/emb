@@ -6,7 +6,8 @@ pub(crate) const ADDRESS_SET_INSTR: u8 = 0xC0; // 0b11000000
 pub(crate) const ADDRESS: u8 = 0x05;           // 0b00000101 (5) Адрес можем изменять от 0 до 15
 
 pub(crate) const DISPLAY_CTRL_INSTR: u8 = 0x80; // 0b10000000
-pub(crate) const DISPLAY_ON_INSTR: u8 = 0x08;   // 0b10001000
+pub(crate) const DISPLAY_ON_INSTR: u8 = 0x08;   // 0b00001000
+pub(crate) const DISPLAY_OFF_INSTR: u8 = 0x00;  // 0b00000000
 pub(crate) const BRIGHTNESS: u8 = 0x01;         // 0b00000111 (0) Можно изменять яркость от 0 до 7
 
 /*
@@ -29,7 +30,7 @@ const DIGIT_1: u8 = 0x06; // 1
 pub(crate) const DIGIT_2: u8 = 0x5B; // 2
 pub(crate) const DIGIT_3: u8 = 0x4F; // 3
 const DIGIT_4: u8 = 0x66; // 4
-const DIGIT_5: u8 = 0x6D; // 5
+pub(crate) const DIGIT_5: u8 = 0x6D; // 5
 const DIGIT_6: u8 = 0x7D; // 6
 const DIGIT_7: u8 = 0x07; // 7
 const DIGIT_8: u8 = 0x7F; // 8

@@ -4,8 +4,8 @@ use defmt::println;
 use embassy_stm32::gpio::{Flex, Level, Output, Pin, Pull, Speed};
 use embassy_stm32::{into_ref, Peripheral};
 use embassy_time::{Duration, Timer};
-use instructions::{BRIGHTNESS, DIGIT_2, DIGIT_3, DISPLAY_CTRL_INSTR, DISPLAY_ON_INSTR, NULL};
-use crate::led_and_key::instructions::{ADDRESS_SET_INSTR, DATA_WRITE_INSTR};
+use instructions::{BRIGHTNESS, DIGIT_2, DIGIT_3, DIGIT_5, DISPLAY_CTRL_INSTR, DISPLAY_ON_INSTR, NULL};
+use crate::led_and_key::instructions::{ADDRESS_SET_INSTR, DATA_WRITE_INSTR, DISPLAY_OFF_INSTR};
 
 mod instructions;
 
@@ -13,6 +13,7 @@ pub struct LedAndKey<'d, STB: Pin, CLK: Pin, DIO: Pin> {
     pub(crate) stb: Output<'d, STB>,
     pub(crate) clk: Output<'d, CLK>,
     pub(crate) dio: Flex<'d, DIO>,
+    pub(crate) display: bool,
     pub(crate) brightness: u8,
 }
 
@@ -25,6 +26,7 @@ impl <'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         let mut clk = Output::new(clk, Level::Low, Speed::Low);
         let mut dio = Flex::new(dio);
         let mut stb = Output::new(stb, Level::Low, Speed::Low);
+        let mut display = true;
         let mut brightness = BRIGHTNESS;
 
         stb.set_high();
@@ -33,14 +35,32 @@ impl <'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
         dio.set_as_input_output(Speed::Low, Pull::Up);
 
-        let mut driver = Self { stb, dio, clk, brightness };
+        let mut driver = Self { stb, dio, clk, display, brightness };
 
         driver.push_display_ctrl_instr();
 
-        driver.set_led_value(1, 1);
-        driver.set_segment_value(7, DIGIT_2);
-
         driver
+    }
+
+    // Includes display.
+    pub(crate) fn display_on(&mut self) {
+        self.display = true;
+        self.push_display_ctrl_instr();
+    }
+
+    // Disable display.
+    pub(crate) fn display_off(&mut self) {
+        self.display = false;
+        self.push_display_ctrl_instr();
+    }
+
+    /*
+     Sets the brightness of the LEDs and segments.
+     @value: 0..7
+     */
+    pub(crate) fn set_brightness(&mut self, value: u8) {
+        self.brightness = value;
+        self.push_display_ctrl_instr();
     }
 
     /*
@@ -75,7 +95,15 @@ impl <'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
     // Display command: display on, set brightness.
     fn push_display_ctrl_instr(&mut self) -> () {
-        self.push_cmd(DISPLAY_CTRL_INSTR | DISPLAY_ON_INSTR | self.brightness);
+        self.stb.set_high();
+        self.dio.set_low();
+        self.clk.set_low();
+
+        let display_instr: u8;
+
+        if self.display { display_instr = DISPLAY_ON_INSTR; } else { display_instr = DISPLAY_OFF_INSTR}
+
+        self.push_cmd(DISPLAY_CTRL_INSTR | display_instr | self.brightness);
     }
 
     /*

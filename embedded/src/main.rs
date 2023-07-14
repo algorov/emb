@@ -20,5 +20,14 @@ async fn main(_spawner: Spawner) -> ! {
     let p = embassy_stm32::init(Default::default());
     let mut driver = LedAndKey::new(p.PA3, p.PA4, p.PA5);
 
+    Timer::after(Duration::from_secs(5)).await;
+
+    driver.set_brightness(0x03);
+    driver.display_off();
+
+    Timer::after(Duration::from_secs(5)).await;
+
+    driver.display_on();
+
     loop {}
 }
