@@ -32,7 +32,7 @@ pub(crate) const DIGIT_0: u8 = 0x3F; // 0
 /*
     ########### Letters ###########
  */
-pub(crate) const DIGIT_A: u8 = 0xF7; // A F7 0x77
+pub(crate) const DIGIT_A: u8 = 0x77; // A
 pub(crate) const DIGIT_b: u8 = 0x7c; // b
 pub(crate) const DIGIT_C: u8 = 0x39; // C
 pub(crate) const DIGIT_d: u8 = 0x5E; // d
