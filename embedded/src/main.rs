@@ -4,6 +4,7 @@
 
 mod led_and_key;
 
+use defmt::println;
 use embassy_executor::Spawner;
 use embassy_stm32::{
     self,
@@ -21,9 +22,11 @@ async fn main(_spawner: Spawner) -> ! {
     let mut driver = LedAndKey::new(p.PA3, p.PA4, p.PA5);
 
     Timer::after(Duration::from_secs(5)).await;
+    let mut keys: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
 
+    let a = [43,4];
 
-
+    println!("{:?}", a);
     loop {
         for i in 0..8 {
             driver.set_led_value(i, 1);
@@ -33,8 +36,9 @@ async fn main(_spawner: Spawner) -> ! {
             driver.set_led_value(i, 0);
             driver.set_brightness(7);
             Timer::after(Duration::from_millis(10)).await;
-        }
 
-        driver.get_keys();
+            driver.def_pressed_keys();
+
+        }
     }
 }

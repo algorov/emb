@@ -1,5 +1,3 @@
-use defmt::export::u32;
-use defmt::println;
 use embassy_stm32::gpio::{Flex, Level, Output, Pin, Pull, Speed};
 use embassy_stm32::{into_ref, Peripheral};
 use crate::led_and_key::instructions::{
@@ -17,12 +15,14 @@ mod instructions;
 
 /*
  TODO:
-  Манипуляция с дисплеем                [+]
-  Манипуляция с яркостью                [+]
-  Манипуляция с сегментом               [+]
-  Манипуляция со светодиодом            [+]
-  Манипуляция с кнопками                [-]
-  Проверка значений на этапе компиляции [-]
+  • Манипуляция с дисплеем                                                [+]
+  • Манипуляция с яркостью                                                [+]
+  • Манипуляции с сегментами                                              [+]
+  • Манипуляции со светодиодами                                           [+]
+  • Манипуляции с кнопками                                                [+]
+  • Проверка значений на этапе компиляции                                 [-]
+  • def_pressed_keys - разобраться (как вернуть массив из функции?)       [-]
+  • Записать целое слово в сегменты                                       [-]
  */
 
 pub struct LedAndKey<'d, STB: Pin, CLK: Pin, DIO: Pin> {
@@ -48,8 +48,7 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         stb.set_high();
         dio.set_low();
         clk.set_low();
-        // dio.set_as_input_output(Speed::Low, Pull::Up);
-        dio.set_as_output(Speed::Low);
+        dio.set_as_output(Speed::Low); // By default, in data transfer mode.
 
         let mut driver = Self { stb, dio, clk, display, brightness };
         driver.push_display_ctrl_instr();
@@ -58,20 +57,16 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         driver
     }
 
-    pub(crate) fn get_keys(&mut self) -> u32 {
-        self.stb.set_low();
-        self.write_byte(SET_DATA_INSTR | DATA_READ_INSTR);
+    // Includes display.
+    pub(crate) fn display_on(&mut self) -> () {
+        self.display = true;
+        self.push_display_ctrl_instr();
+    }
 
-        let mut data: u32 = 0;
-        for i in 0..4 {
-            data |= (self.read_byte() as u32) << (i * 8) ;
-        }
-
-        self.stb.set_high();
-
-        println!("Что получилось: {}", data);
-
-        data
+    // Disable display.
+    pub(crate) fn display_off(&mut self) -> () {
+        self.display = false;
+        self.push_display_ctrl_instr();
     }
 
     // Sets all display registers to zero.
@@ -85,18 +80,6 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         }
 
         self.stb.set_low();
-    }
-
-    // Includes display.
-    pub(crate) fn display_on(&mut self) -> () {
-        self.display = true;
-        self.push_display_ctrl_instr();
-    }
-
-    // Disable display.
-    pub(crate) fn display_off(&mut self) -> () {
-        self.display = false;
-        self.push_display_ctrl_instr();
     }
 
     /*
@@ -127,6 +110,20 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
     }
 
     /*
+     Determines the key pressed.
+     Returns an array of states for each key, from left to right: 1 - pressed, 0 otherwise.
+    */
+    pub(crate) fn def_pressed_keys(&mut self) -> () {
+        let mut data: u32 = self.scan_keys();
+        let mut array: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
+
+        for i in 0..4 {
+            array[i] = (data >> (8 * i) & 1) as u8;
+            array[i + 4] = (data >> (8 * i + 4) & 1) as u8;
+        }
+    }
+
+    /*
      Write a byte to the display register.
      @position: 0..15
      */
@@ -137,6 +134,19 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         self.push_address_instr(position);
         self.write_byte(data);
         self.stb.set_high();
+    }
+
+    // Reads the values of each button.
+    pub(crate) fn scan_keys(&mut self) -> u32 {
+        self.stb.set_low();
+        self.write_byte(SET_DATA_INSTR | DATA_READ_INSTR);
+
+        let mut data: u32 = 0;
+        for i in 0..4 { data |= (self.read_byte() as u32) << (i * 8); }
+
+        self.stb.set_high();
+
+        data
     }
 
     /*
@@ -189,18 +199,17 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
     }
 
     // Read 1 byte of information from TM1638.
-    fn read_byte(&mut self) -> (u8) {
+    fn read_byte(&mut self) -> u8 {
         self.dio.set_as_input(Pull::Up);
-        let mut byte: u8 = 0;
 
+        let mut byte: u8 = 0;
         for i in 0..8 {
             self.clk.set_low();
             self.clk.set_high();
 
-            if self.dio.is_high() { byte |= 1 << i; } else { byte |= 0 << i; }
+            if self.dio.is_high() { byte |= 1 << i; }
         }
 
-        println!("Записанный байт: {}", byte);
         self.dio.set_as_output(Speed::Low);
 
         byte
