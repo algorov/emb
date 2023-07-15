@@ -1,15 +1,5 @@
 use embassy_stm32::gpio::{Flex, Level, Output, Pin, Pull, Speed};
 use embassy_stm32::{into_ref, Peripheral};
-use crate::led_and_key::instructions::{
-    BRIGHTNESS,
-    DATA_READ_INSTR,
-    DATA_WRITE_INSTR,
-    DISPLAY_OFF_INSTR,
-    DISPLAY_ON_INSTR,
-    NULL,
-    SET_ADDRESS_INSTR,
-    SET_DATA_INSTR,
-    SET_DISPLAY_CTRL_INSTR};
 
 mod instructions;
 
@@ -22,7 +12,6 @@ mod instructions;
   • Манипуляции с кнопками                                                [+]
   • Проверка значений на этапе компиляции                                 [-]
   • def_pressed_keys - разобраться (как вернуть массив из функции?)       [-]
-  • Записать целое слово в сегменты                                       [-]
  */
 
 pub struct LedAndKey<'d, STB: Pin, CLK: Pin, DIO: Pin> {
@@ -43,7 +32,7 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         let mut dio: Flex<DIO> = Flex::new(dio);
         let mut stb: Output<STB> = Output::new(stb, Level::Low, Speed::Low);
         let mut display: bool = true;
-        let mut brightness: u8 = BRIGHTNESS;
+        let mut brightness: u8 = instructions::BRIGHTNESS;
 
         stb.set_high();
         dio.set_low();
@@ -73,10 +62,10 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
     pub(crate) fn cleanup(&mut self) -> () {
         self.push_data_write_instr();
         self.stb.set_low();
-        self.push_address_instr(NULL);
+        self.push_address_instr(instructions::NULL);
 
         for i in 0..15 {
-            self.write_byte(NULL);
+            self.write_byte(instructions::NULL);
         }
 
         self.stb.set_low();
@@ -96,8 +85,8 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
      @position: 0..7
      @state: 0..9 and A-Z
      */
-    pub(crate) fn set_segment_value(&mut self, position: u8, state: u8) -> () {
-        self.write(position << 1, state);
+    pub(crate) fn set_segment_value(&mut self, position: u8, value: u8) -> () {
+        self.write(position << 1, value);
     }
 
     /*
@@ -105,7 +94,7 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
      @position: 0..7
      @state: 0 or 1
      */
-    pub(crate) fn set_led_value(&mut self, position: u8, state: u8) -> () {
+    pub(crate) fn set_led_state(&mut self, position: u8, state: u8) -> () {
         self.write((position << 1) + 1, state);
     }
 
@@ -139,7 +128,7 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
     // Reads the values of each button.
     pub(crate) fn scan_keys(&mut self) -> u32 {
         self.stb.set_low();
-        self.write_byte(SET_DATA_INSTR | DATA_READ_INSTR);
+        self.write_byte(instructions::SET_DATA_INSTR | instructions::DATA_READ_INSTR);
 
         let mut data: u32 = 0;
         for i in 0..4 { data |= (self.read_byte() as u32) << (i * 8); }
@@ -162,9 +151,14 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
         let display_instr: u8;
 
-        if self.display { display_instr = DISPLAY_ON_INSTR; } else { display_instr = DISPLAY_OFF_INSTR }
+        if self.display {
+            display_instr = instructions::DISPLAY_ON_INSTR;
+        } else {
+            display_instr = instructions::DISPLAY_OFF_INSTR;
+        }
 
-        self.push_instruction(SET_DISPLAY_CTRL_INSTR | display_instr | self.brightness);
+        self.push_instruction(instructions::SET_DISPLAY_CTRL_INSTR |
+            display_instr | self.brightness);
     }
 
     /*
@@ -172,12 +166,13 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
      Data command: AUTOMATIC address increment, normal mode.
      */
     fn push_data_write_instr(&mut self) -> () {
-        self.push_instruction(SET_DATA_INSTR | DATA_WRITE_INSTR);
+        self.push_instruction(instructions::SET_DATA_INSTR |
+            instructions::DATA_WRITE_INSTR);
     }
 
     // Sets the address to write the value to.
     fn push_address_instr(&mut self, address: u8) -> () {
-        self.write_byte(SET_ADDRESS_INSTR | address);
+        self.write_byte(instructions::SET_ADDRESS_INSTR | address);
     }
 
     // Push a instruction to the TM1638.

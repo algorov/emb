@@ -3,16 +3,15 @@
 #![feature(type_alias_impl_trait)]
 
 mod led_and_key;
+mod fonts;
 
-use defmt::println;
 use embassy_executor::Spawner;
 use embassy_stm32::{
     self,
-    gpio::{Level, Output, Speed},
 };
 use embassy_time::{Duration, Timer};
-
 use {defmt_rtt as _, panic_probe as _};
+
 use crate::led_and_key::LedAndKey;
 
 
@@ -21,24 +20,28 @@ async fn main(_spawner: Spawner) -> ! {
     let p = embassy_stm32::init(Default::default());
     let mut driver = LedAndKey::new(p.PA3, p.PA4, p.PA5);
 
-    Timer::after(Duration::from_secs(5)).await;
-    let mut keys: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
 
-    let a = [43,4];
+    // let mut keys: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
 
-    println!("{:?}", a);
+
+
+
+
     loop {
+        driver.set_segment_value(0, fonts::DIGIT_C);
+        driver.set_segment_value(1, fonts::DIGIT_Y);
+        driver.set_segment_value(2, fonts::DIGIT_K);
+        driver.set_segment_value(3, fonts::DIGIT_A);
+
         for i in 0..8 {
             driver.set_led_value(i, 1);
             Timer::after(Duration::from_millis(20)).await;
-            driver.set_brightness(3);
             Timer::after(Duration::from_millis(100)).await;
             driver.set_led_value(i, 0);
-            driver.set_brightness(7);
             Timer::after(Duration::from_millis(10)).await;
-
-            driver.def_pressed_keys();
-
         }
+
+        driver.cleanup();
+        Timer::after(Duration::from_millis(1000)).await;
     }
 }
