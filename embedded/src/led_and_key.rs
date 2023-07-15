@@ -1,7 +1,15 @@
 use embassy_stm32::gpio::{Flex, Level, Output, Pin, Pull, Speed};
 use embassy_stm32::{into_ref, Peripheral};
-use instructions::{BRIGHTNESS, DIGIT_2, DIGIT_3, DIGIT_5, DISPLAY_CTRL_INSTR, DISPLAY_ON_INSTR, NULL};
-use crate::led_and_key::instructions::{ADDRESS_SET_INSTR, DATA_WRITE_INSTR, DISPLAY_OFF_INSTR};
+use crate::led_and_key::instructions::{
+    BRIGHTNESS,
+    DATA_READ_INSTR,
+    DATA_WRITE_INSTR,
+    DISPLAY_OFF_INSTR,
+    DISPLAY_ON_INSTR,
+    NULL,
+    SET_ADDRESS_INSTR,
+    SET_DATA_INSTR,
+    SET_DISPLAY_CTRL_INSTR};
 
 mod instructions;
 
@@ -45,6 +53,9 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         driver.cleanup();
 
         driver
+    }
+
+    pub(crate) fn get_keys(&mut self) -> () {
     }
 
     // Sets all display registers to zero.
@@ -127,20 +138,28 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
         if self.display { display_instr = DISPLAY_ON_INSTR; } else { display_instr = DISPLAY_OFF_INSTR }
 
-        self.push_instruction(DISPLAY_CTRL_INSTR | display_instr | self.brightness);
+        self.push_instruction(SET_DISPLAY_CTRL_INSTR | display_instr | self.brightness);
     }
 
     /*
-     Sets the value in the memory address.
+     Sends instructions for subsequent recording.
      Data command: AUTOMATIC address increment, normal mode.
      */
     fn push_data_write_instr(&mut self) -> () {
-        self.push_instruction(DATA_WRITE_INSTR);
+        self.push_instruction(SET_DATA_INSTR | DATA_WRITE_INSTR);
+    }
+
+    /*
+     Sends instructions for later reading.
+     Data command: AUTOMATIC address increment, normal mode.
+    */
+    fn push_data_read_instr(&mut self) -> () {
+        self.push_instruction(SET_DATA_INSTR | DATA_READ_INSTR);
     }
 
     // Sets the address to write the value to.
     fn push_address_instr(&mut self, address: u8) -> () {
-        self.write_byte(ADDRESS_SET_INSTR | address);
+        self.write_byte(SET_ADDRESS_INSTR | address);
     }
 
     // Push a instruction to the TM1638.

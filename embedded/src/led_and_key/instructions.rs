@@ -1,14 +1,16 @@
 pub(crate) const NULL: u8 = 0x00; // 0b00000000
 
-pub(crate) const DATA_WRITE_INSTR: u8 = 0x40; // 0b01000000 // запись в регистры отображения
+pub(crate) const SET_DATA_INSTR: u8 = 0x40;     // 0b01000000
+pub(crate) const DATA_WRITE_INSTR: u8 = 0x00;   // 0b00000000 запись в регистры отображения
+pub(crate) const DATA_READ_INSTR: u8 = 0x02;   // 0b00000000 запись в регистры отображения
 
-pub(crate) const ADDRESS_SET_INSTR: u8 = 0xC0; // 0b11000000
+pub(crate) const SET_ADDRESS_INSTR: u8 = 0xC0; // 0b11000000
 pub(crate) const ADDRESS: u8 = 0x05;           // 0b00000101 (5) Адрес можем изменять от 0 до 15
 
-pub(crate) const DISPLAY_CTRL_INSTR: u8 = 0x80; // 0b10000000
-pub(crate) const DISPLAY_ON_INSTR: u8 = 0x08;   // 0b00001000
-pub(crate) const DISPLAY_OFF_INSTR: u8 = 0x00;  // 0b00000000
-pub(crate) const BRIGHTNESS: u8 = 0x01;         // 0b00000111 (0) Можно изменять яркость от 0 до 7
+pub(crate) const SET_DISPLAY_CTRL_INSTR: u8 = 0x80; // 0b10000000
+pub(crate) const DISPLAY_ON_INSTR: u8 = 0x08;       // 0b00001000
+pub(crate) const DISPLAY_OFF_INSTR: u8 = 0x00;      // 0b00000000
+pub(crate) const BRIGHTNESS: u8 = 0x01;             // 0b00000111 (0) Можно изменять яркость от 0 до 7
 
 /*
           A
