@@ -24,5 +24,17 @@ async fn main(_spawner: Spawner) -> ! {
 
 
 
-    loop {}
+    loop {
+        for i in 0..8 {
+            driver.set_led_value(i, 1);
+            Timer::after(Duration::from_millis(20)).await;
+            driver.set_brightness(3);
+            Timer::after(Duration::from_millis(100)).await;
+            driver.set_led_value(i, 0);
+            driver.set_brightness(7);
+            Timer::after(Duration::from_millis(10)).await;
+        }
+
+        driver.get_keys();
+    }
 }

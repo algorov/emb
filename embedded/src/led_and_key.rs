@@ -1,3 +1,5 @@
+use defmt::export::u32;
+use defmt::println;
 use embassy_stm32::gpio::{Flex, Level, Output, Pin, Pull, Speed};
 use embassy_stm32::{into_ref, Peripheral};
 use crate::led_and_key::instructions::{
@@ -46,7 +48,8 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         stb.set_high();
         dio.set_low();
         clk.set_low();
-        dio.set_as_input_output(Speed::Low, Pull::Up);
+        // dio.set_as_input_output(Speed::Low, Pull::Up);
+        dio.set_as_output(Speed::Low);
 
         let mut driver = Self { stb, dio, clk, display, brightness };
         driver.push_display_ctrl_instr();
@@ -55,7 +58,20 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         driver
     }
 
-    pub(crate) fn get_keys(&mut self) -> () {
+    pub(crate) fn get_keys(&mut self) -> u32 {
+        self.stb.set_low();
+        self.write_byte(SET_DATA_INSTR | DATA_READ_INSTR);
+
+        let mut data: u32 = 0;
+        for i in 0..4 {
+            data |= (self.read_byte() as u32) << (i * 8) ;
+        }
+
+        self.stb.set_high();
+
+        println!("Что получилось: {}", data);
+
+        data
     }
 
     // Sets all display registers to zero.
@@ -149,14 +165,6 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         self.push_instruction(SET_DATA_INSTR | DATA_WRITE_INSTR);
     }
 
-    /*
-     Sends instructions for later reading.
-     Data command: AUTOMATIC address increment, normal mode.
-    */
-    fn push_data_read_instr(&mut self) -> () {
-        self.push_instruction(SET_DATA_INSTR | DATA_READ_INSTR);
-    }
-
     // Sets the address to write the value to.
     fn push_address_instr(&mut self, address: u8) -> () {
         self.write_byte(SET_ADDRESS_INSTR | address);
@@ -178,5 +186,23 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
             self.clk.set_high();
         }
+    }
+
+    // Read 1 byte of information from TM1638.
+    fn read_byte(&mut self) -> (u8) {
+        self.dio.set_as_input(Pull::Up);
+        let mut byte: u8 = 0;
+
+        for i in 0..8 {
+            self.clk.set_low();
+            self.clk.set_high();
+
+            if self.dio.is_high() { byte |= 1 << i; } else { byte |= 0 << i; }
+        }
+
+        println!("Записанный байт: {}", byte);
+        self.dio.set_as_output(Speed::Low);
+
+        byte
     }
 }
