@@ -106,13 +106,8 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
         let mut data: u32 = self.scan_keys();
 
         for i in 0..4 {
-            if (data >> (8 * i) & 1) == 1 {
-                keys_array[i] = true;
-            } else { keys_array[i] = false; }
-
-            if (data >> (8 * i + 4) & 1) == 1 {
-                keys_array[i + 4] = true;
-            } else { keys_array[i + 4] = false; }
+            keys_array[i] = if (data >> (8 * i) & 1) == 1 { true } else { false };
+            keys_array[i + 4] = if (data >> (8 * i + 4) & 1) == 1 { true } else { false };
         }
 
         keys_array
