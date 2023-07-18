@@ -11,7 +11,6 @@ mod instructions;
   • Манипуляции со светодиодами                                           [+]
   • Манипуляции с кнопками                                                [+]
   • Проверка значений на этапе компиляции                                 [-]
-  • def_pressed_keys - разобраться (как вернуть массив из функции?)       [+]
  */
 
 pub struct LedAndKey<'d, STB: Pin, CLK: Pin, DIO: Pin> {
@@ -68,7 +67,7 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
             self.write_byte(instructions::NULL);
         }
 
-        self.stb.set_low();
+        self.stb.set_high();
     }
 
     /*
@@ -100,14 +99,14 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
     /*
      Determines the key pressed.
-     Returns an array of states for each key, from left to right: true - pressed, false - otherwise.
+     Returns an array of states for each key, from left to right: 1 - pressed, 0 - otherwise.
     */
-    pub(crate) fn def_pressed_keys<'a>(&'a mut self, keys_array: &'a mut [bool; 8]) -> &mut [bool; 8] {
+    pub(crate) fn def_pressed_keys<'a>(&'a mut self, keys_array: &'a mut [u8; 8]) -> &mut [u8; 8] {
         let mut data: u32 = self.scan_keys();
 
         for i in 0..4 {
-            keys_array[i] = if (data >> (8 * i) & 1) == 1 { true } else { false };
-            keys_array[i + 4] = if (data >> (8 * i + 4) & 1) == 1 { true } else { false };
+            keys_array[i] = if (data >> (8 * i) & 1) == 1 { 1 } else { 0 };
+            keys_array[i + 4] = if (data >> (8 * i + 4) & 1) == 1 { 1 } else { 0 };
         }
 
         keys_array
