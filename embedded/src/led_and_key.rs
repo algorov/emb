@@ -11,7 +11,7 @@ mod instructions;
   • Манипуляции со светодиодами                                           [+]
   • Манипуляции с кнопками                                                [+]
   • Проверка значений на этапе компиляции                                 [-]
-  • def_pressed_keys - разобраться (как вернуть массив из функции?)       [-]
+  • def_pressed_keys - разобраться (как вернуть массив из функции?)       [+]
  */
 
 pub struct LedAndKey<'d, STB: Pin, CLK: Pin, DIO: Pin> {
@@ -100,16 +100,22 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
     /*
      Determines the key pressed.
-     Returns an array of states for each key, from left to right: 1 - pressed, 0 otherwise.
+     Returns an array of states for each key, from left to right: true - pressed, false - otherwise.
     */
-    pub(crate) fn def_pressed_keys(&mut self) -> () {
+    pub(crate) fn def_pressed_keys<'a>(&'a mut self, keys_array: &'a mut [bool; 8]) -> &mut [bool; 8] {
         let mut data: u32 = self.scan_keys();
-        let mut array: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
 
         for i in 0..4 {
-            array[i] = (data >> (8 * i) & 1) as u8;
-            array[i + 4] = (data >> (8 * i + 4) & 1) as u8;
+            if (data >> (8 * i) & 1) == 1 {
+                keys_array[i] = true;
+            } else { keys_array[i] = false; }
+
+            if (data >> (8 * i + 4) & 1) == 1 {
+                keys_array[i + 4] = true;
+            } else { keys_array[i + 4] = false; }
         }
+
+        keys_array
     }
 
     /*
