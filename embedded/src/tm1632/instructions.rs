@@ -1,9 +1,4 @@
 /*
-    ########### Null ###########
- */
-pub(crate) const NULL: u8 = 0x00;
-
-/*
     MSB           LSB
     7 6 5 4 3 2 1 0
    -----------------
@@ -29,6 +24,7 @@ pub(crate) const NULL: u8 = 0x00;
    -----------------
     1 1 0 - A A A A    Address 0x00..0x0F
 
+
    7.3 Display Control
 
    MSB           LSB
@@ -44,24 +40,33 @@ pub(crate) const NULL: u8 = 0x00;
     1 0 0 0 - 1 1 1    Set the pulse width of 14 / 16
     1 0 0 0 0 - - -    Display off
     1 0 0 0 1 - - -    Display on
-
-
-    ########### Display commands ###########
  */
-pub(crate) const SET_DISPLAY_CTRL_INSTR: u8 = 0x80;
-pub(crate) const DISPLAY_ON_INSTR: u8 = 0x08;
-pub(crate) const DISPLAY_OFF_INSTR: u8 = 0x00;
-pub(crate) const BRIGHTNESS: u8 = 0x07;
+
+#[repr(u8)]
+#[derive(Copy, Clone, PartialEq)]
+pub enum DisplayCommand {
+    SET_DISPLAY_CTRL_INSTR = 0x80,
+    DISPLAY_ON_INSTR = 0x08,
+    DISPLAY_OFF_INSTR = 0x00,
+    BRIGHTNESS_DEFAULT = 0x07,
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, PartialEq)]
+pub enum DataCommand {
+    SET_DATA_INSTR = 0x40,
+    DATA_WRITE_INSTR = 0x00,
+    DATA_READ_INSTR = 0x02,
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, PartialEq)]
+pub enum AddressCommand {
+    SET_ADDRESS_INSTR = 0xC0,
+    ADDRESS_DEFAULT = 0x00,
+}
 
 /*
-    ########### Data commands ###########
+    ########### Null ###########
  */
-pub(crate) const SET_DATA_INSTR: u8 = 0x40;
-pub(crate) const DATA_WRITE_INSTR: u8 = 0x00;
-pub(crate) const DATA_READ_INSTR: u8 = 0x02;
-
-/*
-    ########### Address commands ###########
- */
-pub(crate) const SET_ADDRESS_INSTR: u8 = 0xC0;
-pub(crate) const ADDRESS: u8 = 0x05;
+pub(crate) const NULL: u8 = 0x00;
