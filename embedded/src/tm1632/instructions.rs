@@ -57,6 +57,7 @@ pub enum DataCommand {
     SET_DATA_INSTR = 0x40,
     DATA_WRITE_INSTR = 0x00,
     DATA_READ_INSTR = 0x02,
+    FIXED_ADDRESS = 0x04,
 }
 
 #[repr(u8)]

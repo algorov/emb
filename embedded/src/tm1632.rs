@@ -62,7 +62,7 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
     // Sets all display registers to zero.
     pub(crate) fn cleanup(&mut self) -> () {
-        self.push_data_write_instr();
+        self.push_data_write_instr(true);
         self.stb.set_low();
         self.push_address_instr(AddressCommand::ADDRESS_DEFAULT as u8);
 
@@ -120,7 +120,7 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
      @position: 0..15
      */
     fn write(&mut self, position: u8, data: u8) -> () {
-        self.push_data_write_instr();
+        self.push_data_write_instr(false);
 
         self.stb.set_low();
         self.push_address_instr(position);
@@ -166,10 +166,12 @@ impl<'d, STB: Pin, CLK: Pin, DIO: Pin> LedAndKey<'d, STB, CLK, DIO> {
 
     /*
      Sends instructions for subsequent recording.
-     Data command: AUTOMATIC address increment, normal mode.
+     Data command:
+     if @autoincrement is true, then AUTOMATIC address increment mode, else fixed address mode.
      */
-    fn push_data_write_instr(&mut self) -> () {
+    fn push_data_write_instr(&mut self, autoincrement: bool) -> () {
         self.push_instruction(DataCommand::SET_DATA_INSTR as u8 |
+            if autoincrement { instructions::NULL } else { DataCommand::FIXED_ADDRESS as u8 } |
             DataCommand::DATA_WRITE_INSTR as u8);
     }
 
