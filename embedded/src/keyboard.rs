@@ -1,59 +1,54 @@
-mod requirements;
+pub(crate) mod config;
 
-use defmt::println;
 use embassy_stm32::gpio::{AnyPin, Input, Level, Output, Pull, Speed};
-use crate::keyboard::requirements::{KeyFont, KeyState};
-
-const ROW_COUNT: usize = 5;
-const COLUMN_COUNT: usize = 4;
+use crate::keyboard::config::*;
 
 pub struct Keyboard<'d> {
     row: [Output<'d, AnyPin>; ROW_COUNT],
     column: [Input<'d, AnyPin>; COLUMN_COUNT],
+    fonts: [u8; FONTS_CAPACITY],
+
     state: KeyState,
-    key_position: u8,
     pressed_key_now_position: u8,
     pressed_key_was_position: u8,
+    key_position: u8,
 }
 
 impl<'d> Keyboard<'d> {
+    // For 5x4 keyboard.
     pub(crate) fn default(
-        pin1: AnyPin,
-        pin2: AnyPin,
-        pin3: AnyPin,
-        pin4: AnyPin,
-        pin5: AnyPin,
-        pin6: AnyPin,
-        pin7: AnyPin,
-        pin8: AnyPin,
-        pin9: AnyPin) -> Keyboard<'d> {
-        let mut inC1 = Input::new(AnyPin::from(pin1), Pull::Up);
-        let mut inC2 = Input::new(AnyPin::from(pin2), Pull::Up);
-        let mut inC3 = Input::new(AnyPin::from(pin3), Pull::Up);
-        let mut inC4 = Input::new(AnyPin::from(pin4), Pull::Up);
-        let mut outR1 = Output::new(AnyPin::from(pin5), Level::High, Speed::Low);
-        let mut outR2 = Output::new(AnyPin::from(pin6), Level::High, Speed::Low);
-        let mut outR3 = Output::new(AnyPin::from(pin7), Level::High, Speed::Low);
-        let mut outR4 = Output::new(AnyPin::from(pin8), Level::High, Speed::Low);
-        let mut outR5 = Output::new(AnyPin::from(pin9), Level::High, Speed::Low);
+        pin1: AnyPin, pin2: AnyPin, pin3: AnyPin, pin4: AnyPin,
+        pin5: AnyPin, pin6: AnyPin, pin7: AnyPin, pin8: AnyPin, pin9: AnyPin) -> Keyboard<'d> {
+        let mut in_c1 = Input::new(pin1, Pull::Up);
+        let mut in_c2 = Input::new(pin2, Pull::Up);
+        let mut in_c3 = Input::new(pin3, Pull::Up);
+        let mut in_c4 = Input::new(pin4, Pull::Up);
+        let mut out_r1 = Output::new(pin5, Level::High, Speed::Low);
+        let mut out_r2 = Output::new(pin6, Level::High, Speed::Low);
+        let mut out_r3 = Output::new(pin7, Level::High, Speed::Low);
+        let mut out_r4 = Output::new(pin8, Level::High, Speed::Low);
+        let mut out_r5 = Output::new(pin9, Level::High, Speed::Low);
+        let mut column: [Input<AnyPin>; COLUMN_COUNT] = [in_c1, in_c2, in_c3, in_c4];
+        let mut row: [Output<AnyPin>; ROW_COUNT] = [out_r5, out_r4, out_r3, out_r2, out_r1];
 
-        let row: [Output<AnyPin>; 5] = [outR5, outR4, outR3, outR2, outR1];
-        let column: [Input<AnyPin>; 4] = [inC1, inC2, inC3, inC4];
+        let fonts: [u8; FONTS_CAPACITY] = FONTS;
+
         let mut state: KeyState = KeyState::RELEASED;
         let mut pressed_key_now_position = 255;
         let mut pressed_key_was_position = 255;
-        let mut key_position = 255;
+        let mut key_position: u8 = 255;
 
-        Self { row, column, state, key_position, pressed_key_now_position, pressed_key_was_position }
+        Self { row, column, fonts, state, pressed_key_now_position, pressed_key_was_position, key_position }
     }
 
-    pub(crate) fn getKey(&mut self) -> Option<u8> {
+    // Keyboard reading.
+    pub(crate) fn get_key(&mut self) -> Option<u8> {
         self.read();
 
         if self.state == KeyState::RELEASED && self.key_position != 255 {
-            let temp = self.key_position;
+            let askii_code: u8 = FONTS[self.key_position as usize];
             self.key_position = 255;
-            Some(temp)
+            Some(askii_code)
         } else {
             None
         }
@@ -74,9 +69,10 @@ impl<'d> Keyboard<'d> {
         self.pressed_key_was_position = self.pressed_key_now_position;
     }
 
-    // Определяет позицию нажатой в данный момент кнопки на клавиатуре.
-    pub(crate) fn pressed_now_position(&mut self) -> u8{
+    // Determines the position of the currently pressed button on the keyboard.
+    pub(crate) fn pressed_now_position(&mut self) -> u8 {
         let mut position: u8 = 255;
+
 
         for i in 0..ROW_COUNT {
             self.row[i].set_low();
