@@ -1,4 +1,8 @@
+mod requirements;
+
+use defmt::println;
 use embassy_stm32::gpio::{AnyPin, Input, Level, Output, Pull, Speed};
+use crate::keyboard::requirements::{KeyFont, KeyState};
 
 const ROW_COUNT: usize = 5;
 const COLUMN_COUNT: usize = 4;
@@ -6,11 +10,14 @@ const COLUMN_COUNT: usize = 4;
 pub struct Keyboard<'d> {
     row: [Output<'d, AnyPin>; ROW_COUNT],
     column: [Input<'d, AnyPin>; COLUMN_COUNT],
-    pub pressed_key_now: u8,
+    state: KeyState,
+    key_position: u8,
+    pressed_key_now_position: u8,
+    pressed_key_was_position: u8,
 }
 
 impl<'d> Keyboard<'d> {
-    pub(crate) fn new(
+    pub(crate) fn default(
         pin1: AnyPin,
         pin2: AnyPin,
         pin3: AnyPin,
@@ -32,22 +39,57 @@ impl<'d> Keyboard<'d> {
 
         let row: [Output<AnyPin>; 5] = [outR5, outR4, outR3, outR2, outR1];
         let column: [Input<AnyPin>; 4] = [inC1, inC2, inC3, inC4];
-        let mut pressed_key_now = 255;
+        let mut state: KeyState = KeyState::RELEASED;
+        let mut pressed_key_now_position = 255;
+        let mut pressed_key_was_position = 255;
+        let mut key_position = 255;
 
-        Self { row, column, pressed_key_now }
+        Self { row, column, state, key_position, pressed_key_now_position, pressed_key_was_position }
     }
 
-    pub(crate) fn pressed_now_position(&mut self) -> () {
+    pub(crate) fn getKey(&mut self) -> Option<u8> {
+        self.read();
+
+        if self.state == KeyState::RELEASED && self.key_position != 255 {
+            let temp = self.key_position;
+            self.key_position = 255;
+            Some(temp)
+        } else {
+            None
+        }
+    }
+
+    fn read(&mut self) -> () {
+        self.pressed_key_now_position = self.pressed_now_position();
+
+        if self.pressed_key_now_position != 255 && self.pressed_key_now_position != self.pressed_key_was_position {
+            self.state = KeyState::PRESSED;
+        }
+
+        if self.pressed_key_now_position == 255 && self.pressed_key_now_position != self.pressed_key_was_position {
+            self.state = KeyState::RELEASED;
+            self.key_position = self.pressed_key_was_position;
+        }
+
+        self.pressed_key_was_position = self.pressed_key_now_position;
+    }
+
+    // Определяет позицию нажатой в данный момент кнопки на клавиатуре.
+    pub(crate) fn pressed_now_position(&mut self) -> u8{
+        let mut position: u8 = 255;
+
         for i in 0..ROW_COUNT {
             self.row[i].set_low();
 
             for j in 0..COLUMN_COUNT {
                 if !self.column[j].is_high() {
-                    self.pressed_key_now = (i * 4 + j) as u8;
+                    position = (i * 4 + j) as u8;
                 }
             }
 
             self.row[i].set_high();
         }
+
+        position
     }
 }
