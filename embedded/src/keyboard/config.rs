@@ -1,7 +1,6 @@
 pub(crate) const ROW_COUNT: usize = 5;
 pub(crate) const COLUMN_COUNT: usize = 4;
 pub(crate) const FONTS_CAPACITY: usize = ROW_COUNT * COLUMN_COUNT;
-pub(crate) const PINS_CAPACITY: usize = ROW_COUNT + COLUMN_COUNT;
 
 pub(crate) const FONTS: [u8; FONTS_CAPACITY] = [
     0x66, 0x46, 0x23, 0x2A,

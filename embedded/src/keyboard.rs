@@ -73,7 +73,6 @@ impl<'d> Keyboard<'d> {
     pub(crate) fn pressed_now_position(&mut self) -> u8 {
         let mut position: u8 = 255;
 
-
         for i in 0..ROW_COUNT {
             self.row[i].set_low();
 
