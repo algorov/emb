@@ -19,8 +19,15 @@ use crate::tm1632::LedAndKey;
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) -> ! {
     let p = embassy_stm32::init(Default::default());
-    let mut driver = LedAndKey::new(p.PA1, p.PA2, p.PA3);
-    // let mut array: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
+    let mut driver = LedAndKey::new(
+        AnyPin::from(p.PA1),
+        AnyPin::from(p.PA15),
+        AnyPin::from(p.PA2),
+        AnyPin::from(p.PA3)
+    );
+
+    let mut array: [u8; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,];
+
 
     driver.cleanup();
 
@@ -37,9 +44,11 @@ async fn main(_spawner: Spawner) -> ! {
     );
 
     loop {
-        match k.get_key() {
-            Some(x) => println!("Result: {}", char::from(x)),
-            None => {}
-        }
+        // match k.get_key() {
+        //     Some(x) => println!("Result: {}", char::from(x)),
+        //     None => {}
+        // }
+
+
     }
 }
