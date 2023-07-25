@@ -1,7 +1,7 @@
 /*
     ####################### Can be changed #######################
 */
-pub(crate) const DISPLAY_COUNT: usize = 1;
+pub(crate) const DISPLAY_COUNT: usize = 2;
 
 
 /*

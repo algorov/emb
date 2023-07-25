@@ -21,7 +21,7 @@ pub struct LedAndKey<'d> {
 
 impl<'d> LedAndKey<'d> {
     pub(crate) fn new(stb_one: AnyPin,
-                      // stb_two: AnyPin,
+                      stb_two: AnyPin,
                       clk: AnyPin,
                       dio: AnyPin) -> LedAndKey<'d> {
         let mut clk: Output<AnyPin> = Output::new(clk, Level::Low, Speed::Low);
@@ -31,19 +31,19 @@ impl<'d> LedAndKey<'d> {
         dio.set_low();
 
         let mut stb_one: Output<AnyPin> = Output::new(stb_one, Level::High, Speed::Low);
-        // let mut stb_two: Output<AnyPin> = Output::new(stb_two, Level::High, Speed::Low);
+        let mut stb_two: Output<AnyPin> = Output::new(stb_two, Level::High, Speed::Low);
 
         let stbs: [Output<'d, AnyPin>; DISPLAY_COUNT] = [
             stb_one,
-            // stb_two,
+            stb_two,
         ];
         let displays: [bool; DISPLAY_COUNT] = [
             true,
-            // true,
+            true,
         ];
         let brightnesses: [u8; DISPLAY_COUNT] = [
             DisplayCommand::BRIGHTNESS_DEFAULT as u8,
-            // DisplayCommand::BRIGHTNESS_DEFAULT as u8,
+            DisplayCommand::BRIGHTNESS_DEFAULT as u8,
         ];
 
         let mut driver = Self { stbs, clk, dio, displays, brightnesses };
