@@ -3,11 +3,13 @@
 #![feature(type_alias_impl_trait)]
 
 
+use defmt::export::char;
 use defmt::println;
 use embassy_executor::Spawner;
 use embassy_stm32::{self};
 use embassy_stm32::gpio::{AnyPin, Input, Level, Output, Pull, Speed};
 use embassy_stm32::Peripherals;
+use embassy_time::{Duration, Timer};
 
 use {defmt_rtt as _, panic_probe as _};
 use config::*;
@@ -24,6 +26,7 @@ struct DivisionByTwo<'d,
     const FONT_CAPACITY: usize> {
     display: LedAndKey<'d, DISPLAY_COUNT>,
     keyboard: Keyboard<'d, ROW_COUNT, COLUMN_COUNT, FONT_CAPACITY>,
+    values: [u8; 16],
 }
 
 impl<'d,
@@ -41,12 +44,47 @@ impl<'d,
     ) -> DivisionByTwo<'d, DISPLAY_COUNT, ROW_COUNT, COLUMN_COUNT, FONT_CAPACITY> {
         let display: LedAndKey<'d, DISPLAY_COUNT> = LedAndKey::default(stbs, clk, dio);
         let keyboard: Keyboard<'d, ROW_COUNT, COLUMN_COUNT, FONT_CAPACITY> = Keyboard::default(rows, columns, fonts);
+        let mut values: [u8; 16] = [0; 16];
 
-        Self { display, keyboard }
+        Self { display, keyboard, values }
     }
 
     pub fn run(&mut self) -> () {
-        println!("AHAHAHAHAHAHAHAHA");
+        self.begin();
+    }
+
+    fn begin(&mut self) -> () {
+        self.print_to_display();
+    }
+
+    // Печатает весь массив в дисплеи.
+    fn print_to_display(&mut self) -> () {
+        for pos in 0..self.values.len() {
+            let symb: char = self.convert_numb_to_char(self.values[pos]);
+
+            self.print_symbol(pos as u8, symb, false);
+        }
+    }
+
+    // Конвертирует число в символьное представление.
+    fn convert_numb_to_char(&mut self, number: u8) -> char {
+        match char::from_digit(number as u32, 10) {
+            Some(x) => { x }
+            None => { ' ' }
+        }
+    }
+
+    // Адаптационная (для двух дисплеев) печать числа.
+    fn print_symbol(&mut self, position: u8, value: char, add_point: bool) -> () {
+        let address: (usize, u8) = self.def_address(position);
+        println!("pos {} id {} posi {}", position, address.0, address.1);
+        self.display.set_segment_value(address.0, address.1, value, add_point)
+    }
+
+    // Вычисляет номер дисплея и позицию сегмента для записи числа.
+    fn def_address(&mut self, position: u8) -> (usize, u8) {
+        let coeff = position / 8;
+        (coeff as usize, position - 8 * coeff)
     }
 }
 
