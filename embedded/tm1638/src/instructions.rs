@@ -70,4 +70,4 @@ pub enum AddressCommand {
 /*
     ########### Null ###########
  */
-pub(crate) const NULL: u8 = 0x00;
+pub const NULL: u8 = 0x00;
