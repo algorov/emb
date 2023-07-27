@@ -28,6 +28,7 @@ struct DivisionByTwo<'d,
     values: [u8; 16],
     tagged: [u8; 16],
     pointer: u8,
+    step_pointer: u8,
     key_states: [u8; 16],
 }
 //
@@ -51,47 +52,57 @@ impl<
         let mut values: [u8; 16] = [0; 16];
         let mut tagged: [u8; 16] = [0; 16];
         let mut pointer: u8 = 0;
+        let mut step_pointer: u8 = 0;
         let mut key_states: [u8; 16] = [0; 16];
 
-        Self { display, keyboard, values, tagged, pointer, key_states }
+        Self { display, keyboard, values, tagged, pointer, step_pointer, key_states }
     }
 
     pub fn run(&mut self) -> () {
-        self.begin();
+        self.reset();
 
         loop {
             let states = self.scan_keys();
             match states.0 {
                 'f' => {
-                    self.enter_numbers();
+                    if self.step_pointer == 0 {
+                        self.enter_numbers();
+                        self.step_pointer += 1;
+                    }
+
                 }
                 'F' => {
-                    self.set_tags();
+                    if self.step_pointer == 1 {
+                        self.set_tags();
+                        self.step_pointer += 1;
+                    }
+
                 }
                 '#' => {
-                    self.step3();
+                    if self.step_pointer == 2 {
+                        self.grouping();
+                        self.step_pointer += 1;
+                    }
                 }
                 '*' => {
-                    self.step4();
+                    if self.step_pointer == 3 || self.step_pointer == 2 {
+                        self.division();
+                        self.step_pointer += if self.step_pointer == 2 { 2 } else { 1 };
+                    }
                 }
                 '-' => {
-                    println!("End.");
                     break;
                 }
                 _ => {}
             }
         }
-        // let states = self.scan_keys();
-        // if states.0 == 'f'
-        // for i in self.scan_keys() {
-        //     println!("{:?}", i);
-        // }
     }
 
-    fn begin(&mut self) -> () {
+    fn reset(&mut self) -> () {
         self.display.cleanup(0);
         self.display.cleanup(1);
         self.pointer = 0;
+        self.step_pointer = 0;
         self.values = [0; 16];
         self.tagged = [0; 16];
         self.print_values();
@@ -145,15 +156,17 @@ impl<
     fn set_tags(&mut self) -> () {
         let mut k: u8 = 1;
         while k < self.pointer {
+            loop {
+                match self.scan_keyboard() {
+                    '→' => { break }
+                    _ => {}
+                }
+            }
+
             if self.values[k as usize - 1] % 2 == 1 {
                 self.set_tag(k);
 
-                loop {
-                    match self.scan_keyboard() {
-                        '→' => { break }
-                        _ => {}
-                    }
-                }
+
             }
 
             k += 1;
@@ -165,45 +178,47 @@ impl<
         self.print_tag(pos, 1);
     }
 
-    fn step3(&mut self) -> () {
-        println!("Step 3");
+    fn grouping(&mut self) -> () {
+        loop {
+            let keys = self.scan_keys();
 
+            match keys.0 {
+                '+' => { break }
+                _ => {}
+            }
 
-        let mut i: u8 = 1;
-        while i < self.pointer {
-            if self.tagged[i as usize] == 0 && self.tagged[i as usize - 1] == 1 {
-                let symbol = self.convert_numb_to_char(self.values[i as usize]);
-                self.print_symbol(i, symbol, true);
-
-                loop {
-                    match self.scan_keyboard() {
-                        '→' => { break }
-                        _ => {}
-                    }
-                }
-            } else {
-                if self.tagged[i as usize] == 0 && self.tagged[i as usize - 1] == 0 {
-                    let symbol = self.convert_numb_to_char(self.values[i as usize]);
-                    self.print_symbol(i, symbol, true);
-
-                    loop {
-                        match self.scan_keyboard() {
-                            '→' => { break }
-                            _ => {}
-                        }
+            for pos in 0..16 {
+                if self.key_states[pos] == 1 {
+                    if (pos as u8) < self.pointer {
+                        let symbol = self.convert_numb_to_char(self.values[pos as usize]);
+                        self.print_symbol(pos as u8, symbol, true);
                     }
                 }
             }
-
-
-            i += 1;
         }
-
-        println!("Step 3 end.");
     }
 
-    fn step4(&mut self) -> () {
-        println!("Step 4");
+    fn division(&mut self) -> () {
+        let mut pos: u8 = 0;
+        while  pos < self.pointer {
+            loop {
+                match self.scan_keyboard() {
+                    '→' => { break }
+                    _ => {}
+                }
+            }
+
+            let mut part = if self.tagged[pos as usize] == 1 {(self.values[pos as usize] + 10) / 2} else { self.values[pos as usize] / 2 };
+            let temp = self.convert_numb_to_char(part);
+            self.values[pos as usize] = part;
+            self.print_symbol(pos, temp, false);
+
+            if self.tagged[pos as usize] == 1 {
+                self.print_tag(pos, 0);
+            }
+
+            pos += 1;
+        }
     }
 
     // Adds the number entered from the keyboard to the array and prints it on the display.
@@ -322,7 +337,6 @@ async fn main(_spawner: Spawner) -> ! {
             columns,
             FONTS,
         );
-
 
     loop {
         division.run();
