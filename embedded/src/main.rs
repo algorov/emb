@@ -10,6 +10,8 @@ use embassy_stm32::{self};
 use embassy_stm32::gpio::{AnyPin, Input, Level, Output, Pull, Speed};
 use embassy_stm32::Peripherals;
 
+use {defmt_rtt as _, panic_probe as _};
+
 use config::*;
 use keyboard::*;
 use tm1638::*;
@@ -24,9 +26,11 @@ struct DivisionByTwo<'d,
     display: LedAndKey<'d, DISPLAY_COUNT>,
     keyboard: Keyboard<'d, ROW_COUNT, COLUMN_COUNT, FONT_CAPACITY>,
     values: [u8; 16],
+    tagged: [u8; 16],
+    pointer: u8,
     key_states: [u8; 16],
 }
-
+//
 impl<
     'd,
     const DISPLAY_COUNT: usize,
@@ -39,15 +43,17 @@ impl<
         dio: AnyPin,
         rows: [Output<'d, AnyPin>; ROW_COUNT],
         columns: [Input<'d, AnyPin>; COLUMN_COUNT],
-        fonts: [u8; FONT_CAPACITY],
+        fonts: [char; FONT_CAPACITY],
     ) -> DivisionByTwo<'d, DISPLAY_COUNT, ROW_COUNT, COLUMN_COUNT, FONT_CAPACITY> {
         let display: LedAndKey<'d, DISPLAY_COUNT> = LedAndKey::default(stbs, clk, dio);
         let keyboard: Keyboard<'d, ROW_COUNT, COLUMN_COUNT, FONT_CAPACITY> = Keyboard::default(rows, columns, fonts);
 
         let mut values: [u8; 16] = [0; 16];
+        let mut tagged: [u8; 16] = [0; 16];
+        let mut pointer: u8 = 0;
         let mut key_states: [u8; 16] = [0; 16];
 
-        Self { display, keyboard, values, key_states }
+        Self { display, keyboard, values, tagged, pointer, key_states }
     }
 
     pub fn run(&mut self) -> () {
@@ -56,19 +62,19 @@ impl<
         loop {
             let states = self.scan_keys();
             match states.0 {
-                '1' => {
-                    self.step1();
+                'f' => {
+                    self.enter_numbers();
                 }
-                '2' => {
-                    self.step2();
+                'F' => {
+                    self.set_tags();
                 }
-                '3' => {
+                '#' => {
                     self.step3();
                 }
-                '4' => {
+                '*' => {
                     self.step4();
                 }
-                '8' => {
+                '-' => {
                     println!("End.");
                     break;
                 }
@@ -82,89 +88,144 @@ impl<
         // }
     }
 
-    fn step1(&mut self) -> () {
-        println!("Step 1");
-        let mut pointer: u8 = 0;
-        loop {
-            if pointer <= 15 {
-                let mut key: char = self.scan_keyboard();
-                match key {
-                    '0' => {
-                        self.values[pointer as usize] = 0;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '1' => {
-                        self.values[pointer as usize] = 1;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '2' => {
-                        self.values[pointer as usize] = 2;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '3' => {
-                        self.values[pointer as usize] = 3;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '4' => {
-                        self.values[pointer as usize] = 4;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '5' => {
-                        self.values[pointer as usize] = 5;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '6' => {
-                        self.values[pointer as usize] = 6;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '7' => {
-                        self.values[pointer as usize] = 7;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '8' => {
-                        self.values[pointer as usize] = 8;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '9' => {
-                        self.values[pointer as usize] = 9;
-                        self.print_symbol(pointer, key, false);
-                        pointer += 1;
-                    }
-                    '<' => {
-                        println!("Step 1 end");
-                        break;
-                    }
-                    _ => {}
-                }
-            }
+    fn begin(&mut self) -> () {
+        self.display.cleanup(0);
+        self.display.cleanup(1);
+        self.pointer = 0;
+        self.values = [0; 16];
+        self.tagged = [0; 16];
+        self.print_values();
+    }
 
-            println!("{:?}", self.values);
+    // Keyboard input.
+    fn enter_numbers(&mut self) -> () {
+        loop {
+            match self.scan_keyboard() {
+                '0' => {
+                    self.add_numb(0);
+                }
+                '1' => {
+                    self.add_numb(1);
+                }
+                '2' => {
+                    self.add_numb(2);
+                }
+                '3' => {
+                    self.add_numb(3);
+                }
+                '4' => {
+                    self.add_numb(4);
+                }
+                '5' => {
+                    self.add_numb(5);
+                }
+                '6' => {
+                    self.add_numb(6);
+                }
+                '7' => {
+                    self.add_numb(7);
+                }
+                '8' => {
+                    self.add_numb(8);
+                }
+                '9' => {
+                    self.add_numb(9);
+                }
+                '←' => {
+                    self.remove_numb();
+                }
+                '+' => {
+                    break;
+                }
+                _ => {}
+            }
         }
     }
 
-    fn step2(&mut self) -> () {
-        println!("Step 2");
+    fn set_tags(&mut self) -> () {
+        let mut k: u8 = 1;
+        while k < self.pointer {
+            if self.values[k as usize - 1] % 2 == 1 {
+                self.set_tag(k);
+
+                loop {
+                    match self.scan_keyboard() {
+                        '→' => { break }
+                        _ => {}
+                    }
+                }
+            }
+
+            k += 1;
+        }
+    }
+
+    fn set_tag(&mut self, pos: u8) -> () {
+        self.tagged[pos as usize] = 1;
+        self.print_tag(pos, 1);
     }
 
     fn step3(&mut self) -> () {
         println!("Step 3");
+
+
+        let mut i: u8 = 1;
+        while i < self.pointer {
+            if self.tagged[i as usize] == 0 && self.tagged[i as usize - 1] == 1 {
+                let symbol = self.convert_numb_to_char(self.values[i as usize]);
+                self.print_symbol(i, symbol, true);
+
+                loop {
+                    match self.scan_keyboard() {
+                        '→' => { break }
+                        _ => {}
+                    }
+                }
+            } else {
+                if self.tagged[i as usize] == 0 && self.tagged[i as usize - 1] == 0 {
+                    let symbol = self.convert_numb_to_char(self.values[i as usize]);
+                    self.print_symbol(i, symbol, true);
+
+                    loop {
+                        match self.scan_keyboard() {
+                            '→' => { break }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+
+
+            i += 1;
+        }
+
+        println!("Step 3 end.");
     }
 
     fn step4(&mut self) -> () {
         println!("Step 4");
     }
 
-    fn begin(&mut self) -> () {
-        self.print_values();
+    // Adds the number entered from the keyboard to the array and prints it on the display.
+    fn add_numb(&mut self, numb: u8) -> () {
+        if self.pointer <= 15 {
+            let symbol: char = self.convert_numb_to_char(numb);
+
+            self.values[self.pointer as usize] = numb;
+            self.print_symbol(self.pointer, symbol, false);
+            self.pointer += 1;
+        }
+    }
+
+
+    fn remove_numb(&mut self) -> () {
+        if self.pointer != 0 {
+            self.pointer -= 1;
+            self.values[self.pointer as usize] = 0;
+
+            let symbol: char = self.convert_numb_to_char(0);
+            self.print_symbol(self.pointer, symbol, false);
+        }
     }
 
     // Scans input devices.
@@ -209,7 +270,7 @@ impl<
     }
 
     // Adapted (for two displays) value printing in LED.
-    fn print_flag(&mut self, pos: u8, value: u8) {
+    fn print_tag(&mut self, pos: u8, value: u8) {
         let address: (usize, u8) = self.def_address(pos);
         self.display.set_led_state(address.0, address.1, value);
     }
@@ -262,12 +323,8 @@ async fn main(_spawner: Spawner) -> ! {
             FONTS,
         );
 
-    division.run();
 
     loop {
-        // match matrix_keyboard.get_key() {
-        //     Some(x) => println!("Result: {}", char::from(x)),
-        //     None => {}
-        // }
+        division.run();
     }
 }
