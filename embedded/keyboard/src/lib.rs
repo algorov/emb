@@ -8,7 +8,7 @@ mod config;
 pub struct Keyboard<'d, const ROW_COUNT: usize, const COLUMN_COUNT: usize, const CAPACITY: usize> {
     rows: [Output<'d, AnyPin>; ROW_COUNT],
     columns: [Input<'d, AnyPin>; COLUMN_COUNT],
-    fonts: [u8; CAPACITY],
+    fonts: [char; CAPACITY],
 
     state: KeyState,
     cur_pos: u8,
@@ -17,7 +17,7 @@ pub struct Keyboard<'d, const ROW_COUNT: usize, const COLUMN_COUNT: usize, const
 }
 
 impl<'d, const ROW_COUNT: usize, const COLUMN_COUNT: usize, const CAPACITY: usize> Keyboard<'d, ROW_COUNT, COLUMN_COUNT, CAPACITY> {
-    pub fn default(rows: [Output<'d, AnyPin>; ROW_COUNT], columns: [Input<'d, AnyPin>; COLUMN_COUNT], fonts: [u8; CAPACITY])
+    pub fn default(rows: [Output<'d, AnyPin>; ROW_COUNT], columns: [Input<'d, AnyPin>; COLUMN_COUNT], fonts: [char; CAPACITY])
                    -> Keyboard<'d, ROW_COUNT, COLUMN_COUNT, CAPACITY> {
         let mut state: KeyState = KeyState::RELEASED;
         let mut cur_pos = 255;
@@ -27,12 +27,12 @@ impl<'d, const ROW_COUNT: usize, const COLUMN_COUNT: usize, const CAPACITY: usiz
         Self { rows, columns, fonts, state, cur_pos, prev_pos, key_pos }
     }
 
-    // Keyboard reading. Returns the ASCII-code of a char.
-    pub fn get_key(&mut self) -> Option<u8> {
+    // Keyboard reading. Returns a char.
+    pub fn get_key(&mut self) -> Option<char> {
         self.read();
 
         if self.state == KeyState::RELEASED && self.key_pos != 255 && self.key_pos < CAPACITY as u8 {
-            let code: u8 = self.fonts[self.key_pos as usize];
+            let code: char = self.fonts[self.key_pos as usize];
             self.key_pos = 255;
 
             Some(code)
