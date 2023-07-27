@@ -49,7 +49,7 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
             self.set_segment_value(
                 id,
                 pos as u8,
-                &mut data[pos],
+                data[pos],
                 false,
             );
         }
@@ -83,7 +83,7 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
         self.stbs[id].set_low();
         self.push_address_instr(ADDRESS_DEFAULT as u8);
 
-        for i in 0..15 {
+        for i in 0..16 {
             self.write_byte(NULL);
         }
 
@@ -102,7 +102,7 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
     }
 
     // Sets the value of the segment.
-    pub fn set_segment_value(&mut self, id: usize, position: u8, value: &mut char, add_point: bool) -> () {
+    pub fn set_segment_value(&mut self, id: usize, position: u8, value: char, add_point: bool) -> () {
         if id < COUNT && position < SEGMENT_COUNT as u8 {
             let value: DigitSymbol = match value.to_ascii_lowercase() {
                 '0' => { DIGIT_0 }

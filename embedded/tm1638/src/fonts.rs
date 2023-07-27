@@ -53,5 +53,5 @@ pub enum DigitSymbol {
     DIGIT_V = 0x1C,
     DIGIT_W = 0x2A,
     DIGIT_Y = 0x6E,
-    POINT = 0x40,
+    POINT = 0x80,
 }
