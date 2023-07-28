@@ -2,12 +2,12 @@
 
 use embassy_stm32::gpio::{AnyPin, Flex, Level, Output, Pull, Speed};
 
-use AddressCommand::*;
-use BrightnessLevel::*;
+use crate::AddressCommand::*;
+use crate::BrightnessLevel::*;
 use config::*;
-use DataCommand::*;
-use DigitSymbol::*;
-use DisplayCommand::*;
+use crate::DataCommand::*;
+use crate::DigitSymbol::*;
+use crate::DisplayCommand::*;
 use fonts::*;
 use instructions::*;
 
@@ -66,7 +66,7 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
         }
     }
 
-    // Disable display.
+    // Disables display.
     pub fn display_off(&mut self, id: usize) -> () {
         if id < COUNT {
             self.push_display_ctrl_instr(
@@ -77,7 +77,7 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
         }
     }
 
-    // Set display registers to zero.
+    // Sets display registers to zero.
     pub fn cleanup(&mut self, id: usize) -> () {
         self.push_data_write_instr(id, true);
         self.stbs[id].set_low();
@@ -167,7 +167,7 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
     }
 
     /*
-     Determines the key pressed.
+     Gets the key pressed.
      From left to right: 1 - pressed, 0 - otherwise.
     */
     pub fn get_pressed_keys(&mut self, id: usize, key_states: &mut [u8; KEY_COUNT]) -> () {
@@ -179,7 +179,7 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
     }
 
     /*
-     Write a byte to the display register.
+     Writes a byte to the display register.
      @position: 0..15
      */
     fn write(&mut self, id: usize, position: u8, data: u8) -> () {
@@ -204,7 +204,7 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
         data
     }
 
-    // Display configuration instruction.
+    // Displays configuration instruction.
     fn push_display_ctrl_instr(&mut self, id: usize, display_on: bool, brightness: u8) -> () {
         self.push_instruction(
             id,
@@ -223,24 +223,24 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
         self.push_instruction(
             id,
             SET_DATA_INSTR as u8 |
-                if autoincrement { NULL } else { FIXED_ADDRESS as u8 } |
-                DATA_WRITE_INSTR as u8,
+                if autoincrement { NULL } else { FIXED_ADDRESS as u8 }
+                | DATA_WRITE_INSTR as u8,
         );
     }
 
-    // Sets the address to write the value to.
+    // Sets the address to write to.
     fn push_address_instr(&mut self, address: u8) -> () {
         self.write_byte(SET_ADDRESS_INSTR as u8 | address);
     }
 
-    // Push a instruction to the device.
+    // Push an instruction to the device.
     fn push_instruction(&mut self, id: usize, instruction: u8) -> () {
         self.stbs[id].set_low();
         self.write_byte(instruction);
         self.stbs[id].set_high();
     }
 
-    // Write 1 byte of information to the device.
+    // Writes 1 byte of information to the device.
     fn write_byte(&mut self, byte: u8) -> () {
         for i in 0..8 {
             self.clk.set_low();
@@ -251,7 +251,7 @@ impl<'d, const COUNT: usize> LedAndKey<'d, COUNT> {
         }
     }
 
-    // Read 1 byte of information from device.
+    // Reads 1 byte of information from the device.
     fn read_byte(&mut self) -> u8 {
         self.dio.set_as_input(Pull::Up);
 

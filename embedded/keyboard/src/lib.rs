@@ -58,7 +58,7 @@ impl<'d, const ROW_COUNT: usize, const COLUMN_COUNT: usize, const CAPACITY: usiz
 
     /*
      The algorithm for calling each key on the fact of pressing,
-     returns the position of the key on the keyboard2.
+     returns the position of the key on the keyboard.
      */
     fn scan_keys(&mut self) -> u8 {
         let mut pos: u8 = 255;
