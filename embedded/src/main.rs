@@ -28,7 +28,6 @@ struct DivisionByTwo<'d,
     tagged: [u8; 16],
     pointer: u8,
     step_pointer: u8,
-    key_states: [u8; 16],
 }
 
 impl<
@@ -52,9 +51,8 @@ impl<
         let mut tagged: [u8; 16] = [0; 16];
         let mut pointer: u8 = 0;
         let mut step_pointer: u8 = 0;
-        let mut key_states: [u8; 16] = [0; 16];
 
-        Self { display, keyboard, digits, tagged, pointer, step_pointer, key_states }
+        Self { display, keyboard, digits, tagged, pointer, step_pointer }
     }
 
     fn run(&mut self) -> () {
