@@ -3,12 +3,16 @@
     src="./public/logo.png"
     alt="Logo"
     width="100"
-    height="100" />
+    height="100"/>
   <h1>Emb</br>Division-by-2 algorithm in STM32</h1>
   </br>
+  <img
+    src="./public/preview.gif"
+    alt="Prew"
+    width="406"
+    height="720"/>
+  </br>
 </div>
-
-![Preview](./public/preview.gif)
 
 ## About
 
