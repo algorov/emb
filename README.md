@@ -8,7 +8,7 @@
   </br>
 </div>
 
-<!-- ![Preview](link) -->
+![Preview](./public/preview.gif)
 
 ## About
 
@@ -18,7 +18,7 @@ The project, as a result of interest and university practice in embedded systems
 
 * Microcontroller: STM32F411CE
 * Led & Display: TM1638 (x2)
-* Matrix Keypad
+* Matrix Keypad: 5x4
 
 ## Contributors ✨
 
